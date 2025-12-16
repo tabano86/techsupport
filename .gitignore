@@ -1,0 +1,30 @@
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Credentials - NEVER commit these
+*.key
+*.pem
+*_rsa
+*_ed25519
+*.env
+.env.*
+secrets.json
+credentials.json
+
+# Logs
+*.log
+logs/
+
+# Temp files
+*.tmp
+*.temp
+~$*

@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  lint:
+    name: Lint PowerShell
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          Set-PSRepository PSGallery -InstallationPolicy Trusted
+          Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser
+
+      - name: Run PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          $results = Invoke-ScriptAnalyzer -Path ./scripts -Recurse -Settings PSGallery
+          $results | Format-Table -AutoSize
+
+          $errors = $results | Where-Object { $_.Severity -eq 'Error' }
+          if ($errors) {
+            Write-Error "PSScriptAnalyzer found $($errors.Count) errors"
+            exit 1
+          }
+
+          $warnings = $results | Where-Object { $_.Severity -eq 'Warning' }
+          if ($warnings.Count -gt 10) {
+            Write-Warning "PSScriptAnalyzer found $($warnings.Count) warnings (threshold: 10)"
+          }
+
+  syntax-check:
+    name: Syntax Check
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check PowerShell syntax
+        shell: pwsh
+        run: |
+          $hasErrors = $false
+          Get-ChildItem -Path ./scripts -Filter *.ps1 -Recurse | ForEach-Object {
+            $file = $_.FullName
+            try {
+              $null = [System.Management.Automation.Language.Parser]::ParseFile(
+                $file,
+                [ref]$null,
+                [ref]$errors
+              )
+              if ($errors) {
+                Write-Error "Syntax errors in $file"
+                $errors | ForEach-Object { Write-Error $_.Message }
+                $hasErrors = $true
+              } else {
+                Write-Host "OK: $file" -ForegroundColor Green
+              }
+            } catch {
+              Write-Error "Failed to parse $file : $_"
+              $hasErrors = $true
+            }
+          }
+          if ($hasErrors) { exit 1 }
+
+  validate-json:
+    name: Validate JSON
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate JSON files
+        run: |
+          for f in $(find . -name "*.json" -type f); do
+            echo "Validating $f"
+            python3 -m json.tool "$f" > /dev/null || exit 1
+          done
+          echo "All JSON files are valid"

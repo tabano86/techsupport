@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Tools to install on remote machines via winget",
+  "tools": [
+    {
+      "id": "7zip.7zip",
+      "name": "7-Zip",
+      "description": "File archiver with high compression ratio",
+      "required": true
+    },
+    {
+      "id": "Notepad++.Notepad++",
+      "name": "Notepad++",
+      "description": "Source code editor and Notepad replacement",
+      "required": true
+    },
+    {
+      "id": "Microsoft.PowerShell",
+      "name": "PowerShell 7",
+      "description": "Cross-platform PowerShell",
+      "required": true
+    },
+    {
+      "id": "Git.Git",
+      "name": "Git",
+      "description": "Distributed version control system",
+      "required": false
+    },
+    {
+      "id": "Mozilla.Firefox",
+      "name": "Firefox",
+      "description": "Web browser",
+      "required": false
+    },
+    {
+      "id": "VideoLAN.VLC",
+      "name": "VLC",
+      "description": "Media player",
+      "required": false
+    },
+    {
+      "id": "Microsoft.WindowsTerminal",
+      "name": "Windows Terminal",
+      "description": "Modern terminal application",
+      "required": false
+    },
+    {
+      "id": "voidtools.Everything",
+      "name": "Everything",
+      "description": "Fast file search utility",
+      "required": false
+    }
+  ]
+}

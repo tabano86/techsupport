@@ -228,7 +228,13 @@ if ($PSCmdlet.ShouldProcess("sshd", "Configure and start service")) {
     Set-Service -Name ssh-agent -StartupType Automatic -ErrorAction SilentlyContinue
     Start-Service ssh-agent -ErrorAction SilentlyContinue
 
+    # Configure service recovery - auto-restart on failure
+    # Pattern from Joey305/tailscale-setup-windows
+    sc.exe failure sshd reset= 86400 actions= restart/60000/restart/60000/restart/60000 | Out-Null
+    sc.exe failure Tailscale reset= 86400 actions= restart/60000/restart/60000/restart/60000 | Out-Null
+
     Write-Success "SSH service configured and started"
+    Write-Info "Services configured to auto-restart on failure"
 }
 
 # ============================================================

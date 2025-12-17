@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Tech Support Toolkit Configuration",
+  "version": "1.1.0",
+
+  "defaults": {
+    "sshUser": "techsupport",
+    "sshPort": 22,
+    "logDir": "%USERPROFILE%\\Desktop\\TechSupport_Logs",
+    "backupDir": "%USERPROFILE%\\Desktop",
+    "autoBackup": true,
+    "confirmDestructive": true
+  },
+
+  "tailscale": {
+    "hostname": "%COMPUTERNAME%",
+    "unattended": true,
+    "acceptRoutes": false
+  },
+
+  "ssh": {
+    "keyAuth": true,
+    "passwordAuth": true,
+    "restrictToTailscale": true,
+    "serviceRecovery": true
+  },
+
+  "browser": {
+    "cacheAgeDays": 1,
+    "protectedProfiles": ["Default"],
+    "bloatwarePatterns": [
+      "*Spotify*",
+      "*Discord*",
+      "*Steam*",
+      "*Epic*",
+      "*Origin*",
+      "*Adobe*Update*",
+      "*iTunes*Helper*",
+      "*Cortana*",
+      "*Skype*"
+    ]
+  },
+
+  "tools": {
+    "essential": [
+      "7zip.7zip",
+      "Notepad++.Notepad++",
+      "Microsoft.PowerShell",
+      "Git.Git"
+    ],
+    "recommended": [
+      "voidtools.Everything",
+      "Microsoft.WindowsTerminal",
+      "Bitwarden.Bitwarden"
+    ]
+  },
+
+  "logging": {
+    "enabled": true,
+    "verbose": false,
+    "retentionDays": 30
+  },
+
+  "ui": {
+    "colorOutput": true,
+    "showProgress": true,
+    "confirmPrompts": true
+  }
+}

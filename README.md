@@ -1,244 +1,260 @@
 # Tech Support Toolkit
 
-One-click remote tech support setup. Help family and friends without the headache.
+[![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-blue.svg)](https://docs.microsoft.com/en-us/powershell/)
+[![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6.svg)](https://www.microsoft.com/windows)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub stars](https://img.shields.io/github/stars/tabano86/techsupport.svg)](https://github.com/tabano86/techsupport/stargazers)
 
-## What This Does
-
-1. **Bootstrap** - They run one script, you get RustDesk access
-2. **Setup** - You connect via RustDesk and run the full setup
-3. **Result** - Tailscale VPN + SSH access for automation (no more RustDesk babysitting)
+> **One-click remote tech support for family and friends. No more "can you come over and fix my computer?"**
 
 ```
-[Their PC] <--Tailscale VPN--> [Your PC]
-              (encrypted)
+[Their PC] ←──Tailscale VPN──→ [Your PC]
+                (encrypted)
 
-You can now: ssh techsupport@100.x.y.z
+Result: ssh techsupport@100.x.y.z
 ```
+
+## Table of Contents
+
+- [Quick Start](#quick-start)
+- [Features](#features)
+- [Scripts Overview](#scripts-overview)
+- [Typical Workflow](#typical-workflow)
+- [Installation](#installation)
+- [Usage Examples](#usage-examples)
+- [Common Scenarios](#common-scenarios)
+- [Security](#security)
+- [Complementary Tools](#complementary-tools)
+- [Documentation](#documentation)
+- [Contributing](#contributing)
 
 ## Quick Start
 
-### Prerequisites (Your Machine)
-
-1. [Tailscale](https://tailscale.com/download) installed and logged in
-2. [RustDesk](https://rustdesk.com) installed
-3. A Tailscale auth key from [admin console](https://login.tailscale.com/admin/settings/keys)
-   - Check "Reusable" and "Pre-authorized"
-
-### Step 1: Get Initial Access
-
-Send them this message:
-
-> I need to help fix your computer. Do this:
-> 1. Press Windows key, type "powershell", right-click "Run as administrator"
-> 2. Paste this and press Enter:
-> ```
-> irm https://raw.githubusercontent.com/YOUR_USERNAME/techsupport/main/scripts/bootstrap.ps1 | iex
-> ```
-> 3. Send me the ID and password it shows
-
-### Step 2: Connect via RustDesk
-
-1. Open RustDesk on your machine
-2. Enter their ID and password
-3. Accept when prompted
-
-### Step 3: Run Full Setup
-
-In an **Admin PowerShell** on their machine (through RustDesk):
+### For the person you're helping (they run this):
 
 ```powershell
-# Download and run setup
-irm https://raw.githubusercontent.com/YOUR_USERNAME/techsupport/main/scripts/setup.ps1 -OutFile setup.ps1
+irm https://raw.githubusercontent.com/tabano86/techsupport/main/scripts/bootstrap.ps1 | iex
+```
+
+They send you the RustDesk ID and password. You connect.
+
+### Once connected via RustDesk (you run this):
+
+```powershell
+irm https://raw.githubusercontent.com/tabano86/techsupport/main/scripts/setup.ps1 -OutFile setup.ps1
 .\setup.ps1 -Interactive
 ```
 
-It will ask for:
-- Your Tailscale auth key
-- (Optional) Your SSH public key
-
-### Step 4: Done!
-
-Save the password it generates. Now you can SSH directly:
+### Done! Now you can SSH directly:
 
 ```bash
 ssh techsupport@100.x.y.z
 ```
 
-## All Scripts
+---
 
-### Core Setup Scripts
+## Features
 
-| Script | Who Runs It | What It Does |
-|--------|-------------|--------------|
-| `bootstrap.ps1` | Them | Installs RustDesk, shows connection info |
-| `setup.ps1` | You (via RustDesk) | Installs Tailscale, SSH, configures everything |
-| `verify.ps1` | You | Checks all components are working |
+| Feature | Description |
+|---------|-------------|
+| 🚀 **One-Click Bootstrap** | Non-technical family runs one command |
+| 🔐 **Secure Remote Access** | Tailscale VPN + SSH (no port forwarding) |
+| 🔍 **System Diagnostics** | Full system analysis in seconds |
+| 📧 **Google Account Audit** | Fix account confusion and sync issues |
+| 💾 **Smart Backup** | Backup before making changes |
+| 🧹 **Browser Cleanup** | Cache, profiles, saved passwords |
+| 🛠️ **Windows Fixes** | Temp files, DNS, startup, updates |
+| 🤖 **Claude Code Integration** | AI-assisted troubleshooting |
 
-### Diagnostic & Troubleshooting Scripts
+---
 
-| Script | Purpose | When to Use |
-|--------|---------|-------------|
-| `diagnose.ps1` | Full system diagnostic | First thing to run - collects everything |
-| `google-audit.ps1` | Audit Google accounts | When they have account confusion |
-| `backup.ps1` | Backup important data | Before making any major changes |
+## Scripts Overview
 
-### Fix & Cleanup Scripts
+### 🚀 Master Launcher (NEW in v1.1)
 
-| Script | Purpose | When to Use |
-|--------|---------|-------------|
-| `browser-cleanup.ps1` | Clear cache, manage profiles | Browser is slow or confused |
-| `fix-common.ps1` | Common Windows fixes | Temp files, DNS, startup items |
-| `install-tools.ps1` | Install useful utilities | Get their PC properly set up |
+```powershell
+.\Start-TechSupport.ps1
+```
 
-### Remote Work Scripts
+Interactive menu to run any script. No need to remember file names.
 
-| Script | Purpose | When to Use |
-|--------|---------|-------------|
-| `claude-code.ps1` | Install/manage Claude Code CLI | When you want AI assistance |
+### Core Scripts
+
+| Script | Purpose | Run By |
+|--------|---------|--------|
+| `bootstrap.ps1` | Install RustDesk, show ID | Them |
+| `setup.ps1` | Full Tailscale + SSH setup | You |
+| `verify.ps1` | Check everything works | You |
+
+### Diagnostic Scripts
+
+| Script | Purpose | One-Liner |
+|--------|---------|-----------|
+| `diagnose.ps1` | Full system diagnostic | `irm .../diagnose.ps1 \| iex` |
+| `google-audit.ps1` | Google account audit | `irm .../google-audit.ps1 \| iex` |
+| `backup.ps1` | Backup user data | `irm .../backup.ps1 \| iex` |
+
+### Fix Scripts
+
+| Script | Purpose | One-Liner |
+|--------|---------|-----------|
+| `browser-cleanup.ps1` | Clear cache, manage profiles | `irm .../browser-cleanup.ps1 \| iex` |
+| `fix-common.ps1` | Windows fixes + WinUtil | `irm .../fix-common.ps1 \| iex` |
+| `install-tools.ps1` | Install utilities | `irm .../install-tools.ps1 \| iex` |
+| `winutil.ps1` | Launch WinUtil | `irm christitus.com/win \| iex` |
+
+### Remote Scripts
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| `claude-code.ps1` | Claude Code CLI | `-Action Install\|Login\|Logout\|Status` |
+
+---
 
 ## Typical Workflow
 
-### 1. Get Access (5 min)
-```powershell
-# They run this
-irm https://raw.githubusercontent.com/YOUR_USERNAME/techsupport/main/scripts/bootstrap.ps1 | iex
-# They send you the ID/password, you connect via RustDesk
+```
+┌─────────────────────────────────────────────────────────────┐
+│  1. BOOTSTRAP (5 min)                                       │
+│     They run: irm .../bootstrap.ps1 | iex                   │
+│     They send you: RustDesk ID + Password                   │
+├─────────────────────────────────────────────────────────────┤
+│  2. SETUP (10 min)                                          │
+│     You connect via RustDesk                                │
+│     You run: .\setup.ps1 -Interactive                       │
+├─────────────────────────────────────────────────────────────┤
+│  3. DIAGNOSE (2 min)                                        │
+│     .\diagnose.ps1                                          │
+├─────────────────────────────────────────────────────────────┤
+│  4. BACKUP (5 min)                                          │
+│     .\backup.ps1                                            │
+├─────────────────────────────────────────────────────────────┤
+│  5. FIX                                                     │
+│     .\google-audit.ps1   # Account issues                   │
+│     .\fix-common.ps1     # Windows issues                   │
+│     .\browser-cleanup.ps1 # Browser issues                  │
+├─────────────────────────────────────────────────────────────┤
+│  6. VERIFY                                                  │
+│     .\verify.ps1                                            │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### 2. Set Up Permanent Access (10 min)
+---
+
+## Installation
+
+### Prerequisites
+
+**Your Machine:**
+- [Tailscale](https://tailscale.com/download) installed
+- [RustDesk](https://rustdesk.com) installed
+- Tailscale auth key from [admin console](https://login.tailscale.com/admin/settings/keys)
+
+**Their Machine:**
+- Windows 10 or 11
+- Internet connection
+- Ability to run PowerShell as Admin
+
+### Download All Scripts
+
 ```powershell
-# You run this via RustDesk
-irm https://raw.githubusercontent.com/YOUR_USERNAME/techsupport/main/scripts/setup.ps1 -OutFile setup.ps1
-.\setup.ps1 -Interactive
+# Clone the repo
+git clone https://github.com/tabano86/techsupport.git
+
+# Or download scripts directly
+$dest = "$env:USERPROFILE\Desktop\TechSupport"
+New-Item -ItemType Directory -Path $dest -Force
+$scripts = @(
+    "Start-TechSupport.ps1",
+    "scripts/bootstrap.ps1", "scripts/setup.ps1", "scripts/verify.ps1",
+    "scripts/diagnose.ps1", "scripts/google-audit.ps1", "scripts/backup.ps1",
+    "scripts/browser-cleanup.ps1", "scripts/fix-common.ps1", "scripts/install-tools.ps1",
+    "scripts/claude-code.ps1", "scripts/winutil.ps1"
+)
+$base = "https://raw.githubusercontent.com/tabano86/techsupport/main"
+$scripts | ForEach-Object {
+    $url = "$base/$_"
+    $file = Join-Path $dest (Split-Path $_ -Leaf)
+    Invoke-WebRequest -Uri $url -OutFile $file
+}
 ```
 
-### 3. Diagnose (2 min)
+---
+
+## Usage Examples
+
+### Run the Master Launcher
+
 ```powershell
-# Run diagnostic to understand their system
-irm https://raw.githubusercontent.com/YOUR_USERNAME/techsupport/main/scripts/diagnose.ps1 | iex
+.\Start-TechSupport.ps1
 ```
 
-### 4. Backup Before Changes (5 min)
+### Run Specific Scripts
+
 ```powershell
-# Always backup first!
-irm https://raw.githubusercontent.com/YOUR_USERNAME/techsupport/main/scripts/backup.ps1 | iex
+# Diagnostic
+.\Start-TechSupport.ps1 -Script diagnose
+
+# Quick diagnostic
+.\Start-TechSupport.ps1 -Quick
+
+# Google audit
+.\scripts\google-audit.ps1
+
+# Install tools (list only)
+.\scripts\install-tools.ps1 -List
+
+# Install essential tools
+.\scripts\install-tools.ps1 -Essential
+
+# Claude Code
+.\scripts\claude-code.ps1 -Action Status
+.\scripts\claude-code.ps1 -Action Install
+.\scripts\claude-code.ps1 -Action Logout  # ALWAYS when done!
 ```
 
-### 5. Fix Issues
-```powershell
-# For Google account confusion
-irm https://raw.githubusercontent.com/YOUR_USERNAME/techsupport/main/scripts/google-audit.ps1 | iex
+### Remote Commands via SSH
 
-# For browser issues
-irm https://raw.githubusercontent.com/YOUR_USERNAME/techsupport/main/scripts/browser-cleanup.ps1 | iex
+```bash
+# Run diagnostic remotely
+ssh techsupport@100.x.y.z "powershell -File C:\TechSupport\scripts\diagnose.ps1"
 
-# For general Windows issues
-irm https://raw.githubusercontent.com/YOUR_USERNAME/techsupport/main/scripts/fix-common.ps1 | iex
+# Interactive PowerShell
+ssh techsupport@100.x.y.z "powershell"
 ```
 
-### 6. Install Claude Code for AI Help
-```powershell
-# Install Claude Code CLI
-irm https://raw.githubusercontent.com/YOUR_USERNAME/techsupport/main/scripts/claude-code.ps1 -OutFile claude-code.ps1
-.\claude-code.ps1 -Action Install
-.\claude-code.ps1 -Action Login
+---
 
-# IMPORTANT: When done, always logout!
-.\claude-code.ps1 -Action Logout
+## Common Scenarios
+
+### 📧 Google Account Confusion
+
+**Symptoms:** Wrong Gmail, files missing, sync issues
+
+```powershell
+.\scripts\google-audit.ps1
 ```
 
-## What Gets Installed
+**What it checks:**
+- Multiple Chrome profiles
+- Which Google accounts are signed in
+- Google Drive sync status
+- Old vs new Drive apps
 
-### By setup.ps1
-- **RustDesk** - Remote desktop (backup access)
-- **Tailscale** - Private VPN network
-- **OpenSSH Server** - For automation/scripting
-- **7-Zip, Notepad++, PowerShell 7, Git** - Common utilities
+**Guide:** [GOOGLE-ACCOUNT-GUIDE.md](docs/GOOGLE-ACCOUNT-GUIDE.md)
 
-### By install-tools.ps1 (optional)
-- **Essential:** 7-Zip, Notepad++, PowerShell 7, Git
-- **Utilities:** Everything (search), TreeSize, HWiNFO, Windows Terminal
-- **Security:** Bitwarden, Malwarebytes
-- **Remote:** Tailscale, RustDesk
-- **Media:** VLC, IrfanView
+### 🐌 Computer is Slow
 
-## Complementary Tools We Leverage
-
-This toolkit doesn't reinvent the wheel. We integrate with existing excellent tools:
-
-### [Chris Titus Tech's WinUtil](https://github.com/ChrisTitusTech/winutil)
-The #1 most starred PowerShell project on GitHub. Use it for:
-- **Windows debloating** - Remove bloatware, disable telemetry
-- **Program installation** - One-click bulk install
-- **System tweaks** - Performance optimizations
-- **Windows Update fixes** - Reset stuck updates
-
-Launch it from our toolkit:
 ```powershell
-.\fix-common.ps1  # Select option 0
+.\scripts\fix-common.ps1  # Select option 0 for WinUtil
 # Or directly:
 irm https://christitus.com/win | iex
 ```
 
-### [Joey305/tailscale-setup-windows](https://github.com/Joey305/tailscale-setup-windows)
-We borrowed service resilience patterns from this guide - auto-restart on failure.
-
-### What's Unique to Our Toolkit
-- **RustDesk bootstrap** - Get initial access without them knowing tech
-- **Google account audit** - Specifically for account confusion
-- **Claude Code integration** - AI-assisted troubleshooting
-- **End-to-end workflow** - From zero access to full automation
-
-## Security
-
-- SSH is **only** accessible via Tailscale (firewall blocks all other IPs)
-- Dedicated `techsupport` user with randomized password
-- Optional SSH key authentication (recommended)
-- All traffic encrypted via Tailscale
-
-### Firewall Rule
-
-The setup creates a firewall rule that only allows SSH from Tailscale's CGNAT range:
-
-```
-Allow TCP 22 from 100.64.0.0/10 only
-```
-
-### Claude Code Security
-
-When using Claude Code on someone else's machine:
-- **Always run** `.\claude-code.ps1 -Action Logout` when done
-- This removes all credentials from the machine
-- Never leave your account signed in on shared computers
-
-## Documentation
-
-| Doc | Description |
-|-----|-------------|
-| [QUICKSTART.md](docs/QUICKSTART.md) | Copy-paste message to send to family |
-| [GOOGLE-ACCOUNT-GUIDE.md](docs/GOOGLE-ACCOUNT-GUIDE.md) | Step-by-step guide for Google account confusion |
-| [CHEATSHEET.md](docs/CHEATSHEET.md) | Quick reference for common commands |
-
-## Common Issues & Fixes
-
-### Google Account Confusion
-
-Run the Google audit:
-```powershell
-.\google-audit.ps1
-```
-
-This shows:
-- All Chrome profiles and signed-in accounts
-- Google Drive sync status
-- Recommendations for cleanup
-
-See [GOOGLE-ACCOUNT-GUIDE.md](docs/GOOGLE-ACCOUNT-GUIDE.md) for detailed instructions.
-
-### Browser is Slow/Confused
+### 🌐 Browser Issues
 
 ```powershell
-.\browser-cleanup.ps1
+.\scripts\browser-cleanup.ps1
 ```
 
 Options:
@@ -246,170 +262,143 @@ Options:
 2. Clear cache + history
 3. View Chrome profiles
 4. Remove a profile
-5. Nuclear reset
+5. Nuclear reset (backup first!)
 
-### Computer is Slow
+### 📡 Remote Access Not Working
 
 ```powershell
-.\fix-common.ps1
+.\scripts\verify.ps1
 ```
 
-Options:
-1. Clear temp files
-2. Clear DNS cache
-3. Reset network stack
-4. Repair Windows files
-5. Reset Windows Update
-6. Disable startup bloat
+---
 
-### Can't Find Files
+## Security
 
-Usually a Google Drive sync issue:
+| Feature | Implementation |
+|---------|---------------|
+| **Network** | All traffic via Tailscale (WireGuard encryption) |
+| **Firewall** | SSH only from 100.64.0.0/10 (Tailscale IPs) |
+| **Authentication** | Dedicated user + random password + optional SSH keys |
+| **Service Recovery** | Auto-restart on failure |
+
+### Claude Code Security
+
 ```powershell
-.\google-audit.ps1
+# ALWAYS logout when done on someone else's machine
+.\scripts\claude-code.ps1 -Action Logout
 ```
 
-Check:
-- Which account is signed into Google Drive
-- Where files are syncing to
-- If there are multiple Drive folders
+---
+
+## Complementary Tools
+
+We integrate with these excellent existing tools:
+
+### [Chris Titus Tech's WinUtil](https://github.com/ChrisTitusTech/winutil)
+
+The #1 PowerShell project on GitHub. Use for:
+- Windows debloating
+- One-click program installation
+- System tweaks
+- Windows Update fixes
+
+```powershell
+.\scripts\fix-common.ps1  # Option 0
+# Or: irm https://christitus.com/win | iex
+```
+
+### [Joey305/tailscale-setup-windows](https://github.com/Joey305/tailscale-setup-windows)
+
+We use their service recovery patterns.
+
+---
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [QUICKSTART.md](docs/QUICKSTART.md) | Copy-paste for family |
+| [GOOGLE-ACCOUNT-GUIDE.md](docs/GOOGLE-ACCOUNT-GUIDE.md) | Google confusion fix |
+| [CHEATSHEET.md](docs/CHEATSHEET.md) | Quick command reference |
+| [CLAUDE.md](CLAUDE.md) | AI agent instructions |
+| [CHANGELOG.md](CHANGELOG.md) | Version history |
+
+---
 
 ## File Structure
 
 ```
 techsupport/
-├── scripts/
-│   ├── bootstrap.ps1       # They run this first
-│   ├── setup.ps1           # Full remote access setup
-│   ├── verify.ps1          # Verify setup worked
-│   ├── diagnose.ps1        # Comprehensive diagnostic
-│   ├── google-audit.ps1    # Google account audit
-│   ├── backup.ps1          # Backup user data
-│   ├── browser-cleanup.ps1 # Browser cache/profile cleanup
-│   ├── install-tools.ps1   # Install useful utilities
-│   ├── fix-common.ps1      # Common Windows fixes
-│   └── claude-code.ps1     # Claude Code CLI manager
-├── config/
-│   └── tools.json          # Tools to install (customizable)
-├── docs/
-│   ├── QUICKSTART.md       # Copy-paste message for family
-│   ├── GOOGLE-ACCOUNT-GUIDE.md  # Google account fix guide
-│   └── CHEATSHEET.md       # Quick command reference
-├── .github/
-│   └── workflows/
-│       └── ci.yml          # Linting and validation
+├── Start-TechSupport.ps1      # Master launcher (NEW)
+├── CLAUDE.md                  # AI agent instructions
+├── CHANGELOG.md               # Version history
+├── README.md
 ├── LICENSE
-└── README.md
+│
+├── scripts/
+│   ├── bootstrap.ps1          # They run first
+│   ├── setup.ps1              # Full remote setup
+│   ├── verify.ps1             # Verify setup
+│   ├── diagnose.ps1           # System diagnostic
+│   ├── google-audit.ps1       # Google account audit
+│   ├── backup.ps1             # Backup data
+│   ├── browser-cleanup.ps1    # Browser cleanup
+│   ├── fix-common.ps1         # Windows fixes
+│   ├── install-tools.ps1      # Install utilities
+│   ├── claude-code.ps1        # Claude Code manager
+│   └── winutil.ps1            # WinUtil launcher
+│
+├── modules/
+│   └── TechSupport.psm1       # Shared functions (NEW)
+│
+├── config/
+│   ├── tools.json             # Tool definitions
+│   └── settings.json          # Configuration (NEW)
+│
+├── docs/
+│   ├── QUICKSTART.md
+│   ├── GOOGLE-ACCOUNT-GUIDE.md
+│   └── CHEATSHEET.md
+│
+└── .github/
+    └── workflows/
+        └── ci.yml             # Linting
 ```
 
-## Testing Before You Go
+---
 
-Test the full flow on a Windows VM:
+## Testing
 
-1. Create a Windows 10/11 VM (Hyper-V or VirtualBox)
-2. Run `bootstrap.ps1` in the VM
-3. Connect via RustDesk from your host
-4. Run `setup.ps1` with a test Tailscale auth key
-5. Verify you can SSH from host to VM via Tailscale IP
+Test on a Windows VM before going to help someone:
 
-## Using with Claude/AI Agents
+1. Create Windows 10/11 VM
+2. Run `bootstrap.ps1`
+3. Connect via RustDesk
+4. Run `setup.ps1` with test auth key
+5. Verify SSH works
 
-Once SSH is set up, you can run commands remotely:
+---
 
-```bash
-# Run a command
-ssh techsupport@100.x.y.z "powershell -Command Get-Process"
+## Contributing
 
-# Run a script
-ssh techsupport@100.x.y.z "powershell -File C:\scripts\fix.ps1"
-
-# Interactive session
-ssh techsupport@100.x.y.z
-```
-
-Or install Claude Code directly on their machine:
-```powershell
-.\claude-code.ps1 -Action Install
-.\claude-code.ps1 -Action Login
-# Use Claude Code...
-.\claude-code.ps1 -Action Logout  # ALWAYS logout when done!
-```
-
-This lets AI agents help fix issues programmatically instead of you clicking around in RustDesk.
-
-## Advanced Usage
-
-### Non-Interactive Setup
-
-```powershell
-.\setup.ps1 `
-  -TailscaleAuthKey "tskey-auth-xxxxx" `
-  -Hostname "aunt-laptop" `
-  -SSHUser "support" `
-  -SSHPublicKey "ssh-ed25519 AAAA..."
-```
-
-### Download All Scripts at Once
-
-```powershell
-$dest = "$env:USERPROFILE\Desktop\TechSupport"
-New-Item -ItemType Directory -Path $dest -Force
-@(
-    "bootstrap.ps1", "setup.ps1", "verify.ps1", "diagnose.ps1",
-    "google-audit.ps1", "backup.ps1", "browser-cleanup.ps1",
-    "install-tools.ps1", "fix-common.ps1", "claude-code.ps1"
-) | ForEach-Object {
-    $url = "https://raw.githubusercontent.com/YOUR_USERNAME/techsupport/main/scripts/$_"
-    Invoke-WebRequest -Uri $url -OutFile "$dest\$_"
-}
-```
-
-## Troubleshooting
-
-### "Tailscale not connecting"
+1. Fork the repo
+2. Create a feature branch
+3. Run PSScriptAnalyzer on changes
+4. Submit PR
 
 ```powershell
-# Check status
-& "$env:ProgramFiles\Tailscale\tailscale.exe" status
-
-# Re-authenticate
-& "$env:ProgramFiles\Tailscale\tailscale.exe" up --auth-key=tskey-xxx
+# Lint your changes
+Invoke-ScriptAnalyzer -Path .\scripts -Recurse
 ```
 
-### "SSH connection refused"
-
-```powershell
-# Check if sshd is running
-Get-Service sshd
-
-# Check if port is open
-Test-NetConnection localhost -Port 22
-
-# Check firewall rule
-Get-NetFirewallRule -DisplayName "OpenSSH-Tailscale-Only"
-```
-
-### "Permission denied"
-
-```powershell
-# Check SSH user exists
-Get-LocalUser techsupport
-
-# Reset password if needed
-$pw = ConvertTo-SecureString "NewPassword123!" -AsPlainText -Force
-Set-LocalUser -Name techsupport -Password $pw
-```
-
-### "Can't reach Tailscale IP"
-
-Make sure Tailscale is running on **both** machines:
-
-```bash
-# Your machine
-tailscale status
-tailscale ping <their-hostname>
-```
+---
 
 ## License
 
-MIT
+MIT License - See [LICENSE](LICENSE)
+
+---
+
+<p align="center">
+  <b>Made with ❤️ for everyone who's ever been the family IT department</b>
+</p>

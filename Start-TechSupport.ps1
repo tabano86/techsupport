@@ -3,66 +3,118 @@
     Tech Support Toolkit - Master Launcher
 .DESCRIPTION
     Interactive menu to launch any tech support script.
-    One script to rule them all.
-.PARAMETER Script
-    Directly run a specific script: diagnose, google, backup, browser, tools, fix, claude, verify, setup, winutil
-.PARAMETER Quick
-    Run quick diagnostic without menu
 .EXAMPLE
     .\Start-TechSupport.ps1
     .\Start-TechSupport.ps1 -Script diagnose
-    .\Start-TechSupport.ps1 -Quick
 #>
 
 param(
     [ValidateSet("diagnose", "google", "backup", "browser", "tools", "fix", "claude", "verify", "setup", "winutil", "")]
     [string]$Script,
-
-    [switch]$Quick
+    [switch]$Quick,
+    [switch]$Debug
 )
 
-$ErrorActionPreference = "Continue"
+$ErrorActionPreference = "Stop"
+
+# Robust path resolution
 $scriptDir = $PSScriptRoot
-if (-not $scriptDir) { $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path }
+if (-not $scriptDir) {
+    $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
+}
+if (-not $scriptDir) {
+    $scriptDir = (Get-Location).Path
+}
+
 $scriptsDir = Join-Path $scriptDir "scripts"
 
-# Import module if available
-$modulePath = Join-Path $scriptDir "modules\TechSupport.psm1"
-if (Test-Path $modulePath) {
-    Import-Module $modulePath -Force -ErrorAction SilentlyContinue
+# Debug output
+if ($Debug) {
+    Write-Host "DEBUG: scriptDir = $scriptDir" -ForegroundColor Magenta
+    Write-Host "DEBUG: scriptsDir = $scriptsDir" -ForegroundColor Magenta
+    Write-Host "DEBUG: scriptsDir exists = $(Test-Path $scriptsDir)" -ForegroundColor Magenta
 }
 
-# Color helpers (fallback if module not loaded)
-if (-not (Get-Command Write-TSBanner -ErrorAction SilentlyContinue)) {
-    function Write-TSBanner { param([string]$Title) Write-Host "`n=== $Title ===`n" -ForegroundColor Cyan }
-    function Write-TSSuccess { param([string]$Message) Write-Host "[+] $Message" -ForegroundColor Green }
-    function Write-TSError { param([string]$Message) Write-Host "[!] $Message" -ForegroundColor Red }
-    function Write-TSInfo { param([string]$Message) Write-Host "[i] $Message" -ForegroundColor Cyan }
+# Verify scripts directory exists
+if (-not (Test-Path $scriptsDir)) {
+    Write-Host ""
+    Write-Host "[ERROR] Scripts directory not found: $scriptsDir" -ForegroundColor Red
+    Write-Host ""
+    Write-Host "Make sure you're running from the techsupport folder," -ForegroundColor Yellow
+    Write-Host "or that the 'scripts' subfolder exists." -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "Expected structure:" -ForegroundColor Gray
+    Write-Host "  techsupport/" -ForegroundColor Gray
+    Write-Host "    Start-TechSupport.ps1  <-- you are here" -ForegroundColor Gray
+    Write-Host "    scripts/" -ForegroundColor Gray
+    Write-Host "      diagnose.ps1" -ForegroundColor Gray
+    Write-Host "      ..." -ForegroundColor Gray
+    Write-Host ""
+    Read-Host "Press Enter to exit"
+    exit 1
 }
 
-# Script mapping
-$scripts = @{
-    "1" = @{ Name = "diagnose"; File = "diagnose.ps1"; Desc = "Full System Diagnostic"; Icon = "🔍" }
-    "2" = @{ Name = "google"; File = "google-audit.ps1"; Desc = "Google Account Audit"; Icon = "📧" }
-    "3" = @{ Name = "backup"; File = "backup.ps1"; Desc = "Backup User Data"; Icon = "💾" }
-    "4" = @{ Name = "browser"; File = "browser-cleanup.ps1"; Desc = "Browser Cleanup"; Icon = "🌐" }
-    "5" = @{ Name = "tools"; File = "install-tools.ps1"; Desc = "Install Tools"; Icon = "🔧" }
-    "6" = @{ Name = "fix"; File = "fix-common.ps1"; Desc = "Common Fixes & WinUtil"; Icon = "🔨" }
-    "7" = @{ Name = "claude"; File = "claude-code.ps1"; Desc = "Claude Code Manager"; Icon = "🤖" }
-    "8" = @{ Name = "verify"; File = "verify.ps1"; Desc = "Verify Remote Access"; Icon = "✅" }
-    "9" = @{ Name = "setup"; File = "setup.ps1"; Desc = "Full Remote Setup"; Icon = "⚙️" }
-    "0" = @{ Name = "winutil"; File = "winutil.ps1"; Desc = "Chris Titus WinUtil"; Icon = "🛠️" }
+# Script definitions
+$scriptList = @{
+    "1" = @{ Name = "diagnose"; File = "diagnose.ps1"; Desc = "Full System Diagnostic" }
+    "2" = @{ Name = "google"; File = "google-audit.ps1"; Desc = "Google Account Audit" }
+    "3" = @{ Name = "backup"; File = "backup.ps1"; Desc = "Backup User Data" }
+    "4" = @{ Name = "browser"; File = "browser-cleanup.ps1"; Desc = "Browser Cleanup" }
+    "5" = @{ Name = "tools"; File = "install-tools.ps1"; Desc = "Install Tools" }
+    "6" = @{ Name = "fix"; File = "fix-common.ps1"; Desc = "Common Fixes + WinUtil" }
+    "7" = @{ Name = "claude"; File = "claude-code.ps1"; Desc = "Claude Code Manager" }
+    "8" = @{ Name = "verify"; File = "verify.ps1"; Desc = "Verify Remote Setup" }
+    "9" = @{ Name = "setup"; File = "setup.ps1"; Desc = "Full Remote Setup" }
+    "0" = @{ Name = "winutil"; File = "winutil.ps1"; Desc = "WinUtil Launcher" }
+}
+
+function Run-Script {
+    param(
+        [Parameter(Mandatory)]
+        [string]$ScriptFile,
+        [array]$Arguments = @()
+    )
+
+    $fullPath = Join-Path $scriptsDir $ScriptFile
+
+    if ($Debug) {
+        Write-Host "DEBUG: Attempting to run: $fullPath" -ForegroundColor Magenta
+    }
+
+    if (-not (Test-Path $fullPath)) {
+        Write-Host ""
+        Write-Host "[ERROR] Script not found: $fullPath" -ForegroundColor Red
+        Write-Host ""
+        Read-Host "Press Enter to continue"
+        return
+    }
+
+    Write-Host ""
+    Write-Host "Running $ScriptFile..." -ForegroundColor Green
+    Write-Host ("=" * 60) -ForegroundColor DarkGray
+    Write-Host ""
+
+    try {
+        & $fullPath @Arguments
+    }
+    catch {
+        Write-Host ""
+        Write-Host "[ERROR] Script failed: $_" -ForegroundColor Red
+    }
+
+    Write-Host ""
+    Write-Host ("=" * 60) -ForegroundColor DarkGray
+    Write-Host ""
+    Read-Host "Press Enter to return to menu"
 }
 
 function Show-Menu {
     Clear-Host
     Write-Host ""
-    Write-Host "  ╔═══════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
-    Write-Host "  ║                                                           ║" -ForegroundColor Cyan
-    Write-Host "  ║           TECH SUPPORT TOOLKIT v1.1                       ║" -ForegroundColor Cyan
-    Write-Host "  ║           Remote Family Tech Support Made Easy            ║" -ForegroundColor Cyan
-    Write-Host "  ║                                                           ║" -ForegroundColor Cyan
-    Write-Host "  ╚═══════════════════════════════════════════════════════════╝" -ForegroundColor Cyan
+    Write-Host "  +-----------------------------------------------------------+" -ForegroundColor Cyan
+    Write-Host "  |         TECH SUPPORT TOOLKIT v1.1                         |" -ForegroundColor Cyan
+    Write-Host "  |         Remote Family Tech Support Made Easy              |" -ForegroundColor Cyan
+    Write-Host "  +-----------------------------------------------------------+" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "  DIAGNOSTIC" -ForegroundColor Yellow
     Write-Host "    1. Full System Diagnostic        (diagnose.ps1)"
@@ -83,165 +135,134 @@ function Show-Menu {
     Write-Host "    9. Full Remote Access Setup      (setup.ps1)"
     Write-Host ""
     Write-Host "  OTHER" -ForegroundColor Yellow
+    Write-Host "    H. Help"
     Write-Host "    Q. Quit"
-    Write-Host "    H. Help / Documentation"
     Write-Host ""
 
-    # Show system status
+    # Status line
     $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-    $adminStatus = if ($isAdmin) { "Yes" } else { "No (some features limited)" }
-    Write-Host "  ─────────────────────────────────────────────────────────────" -ForegroundColor DarkGray
-    Write-Host "  Computer: $env:COMPUTERNAME | Admin: $adminStatus" -ForegroundColor DarkGray
+    $adminText = if ($isAdmin) { "Yes" } else { "No (run as Admin for full features)" }
+    Write-Host "  -----------------------------------------------------------" -ForegroundColor DarkGray
+    Write-Host "  Computer: $env:COMPUTERNAME | Admin: $adminText" -ForegroundColor DarkGray
     Write-Host ""
-}
-
-function Invoke-Script {
-    param([string]$ScriptFile, [array]$Arguments)
-
-    $path = Join-Path $scriptsDir $ScriptFile
-
-    if (-not (Test-Path $path)) {
-        Write-TSError "Script not found: $path"
-        return
-    }
-
-    Write-Host ""
-    Write-Host "Running $ScriptFile..." -ForegroundColor Green
-    Write-Host ("─" * 60) -ForegroundColor DarkGray
-    Write-Host ""
-
-    try {
-        if ($Arguments) {
-            & $path @Arguments
-        } else {
-            & $path
-        }
-    }
-    catch {
-        Write-TSError "Script error: $_"
-    }
-
-    Write-Host ""
-    Write-Host ("─" * 60) -ForegroundColor DarkGray
-    Write-Host "Press any key to return to menu..." -ForegroundColor Gray
-    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 }
 
 function Show-Help {
     Clear-Host
-    Write-TSBanner "HELP & DOCUMENTATION"
-
-    Write-Host @"
-RECOMMENDED WORKFLOW
-────────────────────
-1. Run DIAGNOSTIC first (option 1) to understand the system
-2. Run BACKUP (option 3) before making changes
-3. Use targeted fixes based on the issue
-4. Run VERIFY (option 8) to confirm remote access works
-
-COMMON SCENARIOS
-────────────────
-• Google account confusion → Option 2 (Google Audit)
-• Computer is slow → Option 6 (Common Fixes) or Option 0 (WinUtil)
-• Browser issues → Option 4 (Browser Cleanup)
-• Setting up remote access → Option 9 (Full Setup)
-
-KEYBOARD SHORTCUTS
-──────────────────
-• Run directly: .\Start-TechSupport.ps1 -Script diagnose
-• Quick diagnostic: .\Start-TechSupport.ps1 -Quick
-
-MORE HELP
-─────────
-• README: $scriptDir\README.md
-• Google Guide: $scriptDir\docs\GOOGLE-ACCOUNT-GUIDE.md
-• Cheatsheet: $scriptDir\docs\CHEATSHEET.md
-• Claude Guide: $scriptDir\CLAUDE.md
-
-"@ -ForegroundColor White
-
-    Write-Host "Press any key to return to menu..." -ForegroundColor Gray
-    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    Write-Host ""
+    Write-Host "  HELP - Tech Support Toolkit" -ForegroundColor Cyan
+    Write-Host "  ===========================" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "  WORKFLOW:" -ForegroundColor Yellow
+    Write-Host "    1. Run diagnostic (option 1) first"
+    Write-Host "    2. Backup data (option 3) before changes"
+    Write-Host "    3. Fix issues (options 2, 4, 5, 6)"
+    Write-Host "    4. Verify (option 8)"
+    Write-Host ""
+    Write-Host "  COMMON ISSUES:" -ForegroundColor Yellow
+    Write-Host "    Google confusion  -> Option 2"
+    Write-Host "    Slow computer     -> Option 6, then 0"
+    Write-Host "    Browser problems  -> Option 4"
+    Write-Host ""
+    Write-Host "  DOCS: $scriptDir\docs\" -ForegroundColor Gray
+    Write-Host ""
+    Read-Host "Press Enter to return"
 }
 
-# ============================================================
-# MAIN
-# ============================================================
+# === MAIN ===
 
-# Direct script execution
+# Direct script mode
 if ($Script) {
-    $match = $scripts.Values | Where-Object { $_.Name -eq $Script }
-    if ($match) {
-        Invoke-Script -ScriptFile $match.File
-        exit
+    $found = $scriptList.Values | Where-Object { $_.Name -eq $Script } | Select-Object -First 1
+    if ($found) {
+        Run-Script -ScriptFile $found.File
+    } else {
+        Write-Host "Unknown script: $Script" -ForegroundColor Red
     }
+    exit
 }
 
 # Quick mode
 if ($Quick) {
-    Invoke-Script -ScriptFile "diagnose.ps1" -Arguments @("-Quick")
+    Run-Script -ScriptFile "diagnose.ps1" -Arguments @("-Quick")
     exit
 }
 
-# Interactive menu
+# Interactive menu loop
 while ($true) {
     Show-Menu
 
     $choice = Read-Host "  Select option"
+    $choice = $choice.Trim().ToUpper()
 
-    switch ($choice.ToUpper()) {
-        "Q" { Write-Host "`nGoodbye!`n" -ForegroundColor Cyan; exit }
-        "H" { Show-Help }
+    if ($Debug) {
+        Write-Host "DEBUG: User entered: '$choice'" -ForegroundColor Magenta
+        Write-Host "DEBUG: Key exists: $($scriptList.ContainsKey($choice))" -ForegroundColor Magenta
+    }
+
+    switch ($choice) {
+        "Q" {
+            Write-Host "`nGoodbye!`n" -ForegroundColor Cyan
+            exit
+        }
+        "H" {
+            Show-Help
+        }
         default {
-            if ($scripts.ContainsKey($choice)) {
-                $script = $scripts[$choice]
+            if ($scriptList.ContainsKey($choice)) {
+                $selected = $scriptList[$choice]
 
-                # Special handling for certain scripts
-                switch ($script.Name) {
+                # Handle special cases
+                switch ($selected.Name) {
                     "claude" {
                         Write-Host ""
-                        Write-Host "Claude Code options:" -ForegroundColor Yellow
-                        Write-Host "  1. Check Status"
-                        Write-Host "  2. Install"
-                        Write-Host "  3. Login"
-                        Write-Host "  4. Logout"
-                        $subChoice = Read-Host "Select"
-                        $action = switch ($subChoice) {
+                        Write-Host "  Claude Code options:" -ForegroundColor Yellow
+                        Write-Host "    1. Check Status"
+                        Write-Host "    2. Install"
+                        Write-Host "    3. Login"
+                        Write-Host "    4. Logout"
+                        Write-Host ""
+                        $sub = Read-Host "  Select (1-4)"
+                        $action = switch ($sub) {
                             "1" { "Status" }
                             "2" { "Install" }
                             "3" { "Login" }
                             "4" { "Logout" }
                             default { "Status" }
                         }
-                        Invoke-Script -ScriptFile $script.File -Arguments @("-Action", $action)
+                        Run-Script -ScriptFile $selected.File -Arguments @("-Action", $action)
                     }
                     "tools" {
                         Write-Host ""
-                        Write-Host "Install options:" -ForegroundColor Yellow
-                        Write-Host "  1. List installed vs available"
-                        Write-Host "  2. Install essential tools"
-                        Write-Host "  3. Install all tools"
-                        Write-Host "  4. Interactive selection"
-                        $subChoice = Read-Host "Select"
-                        $args = switch ($subChoice) {
+                        Write-Host "  Install options:" -ForegroundColor Yellow
+                        Write-Host "    1. List what's installed"
+                        Write-Host "    2. Install essential tools"
+                        Write-Host "    3. Install all tools"
+                        Write-Host "    4. Interactive selection"
+                        Write-Host ""
+                        $sub = Read-Host "  Select (1-4)"
+                        $toolArgs = switch ($sub) {
                             "1" { @("-List") }
                             "2" { @("-Essential") }
                             "3" { @("-All") }
                             default { @() }
                         }
-                        Invoke-Script -ScriptFile $script.File -Arguments $args
+                        Run-Script -ScriptFile $selected.File -Arguments $toolArgs
                     }
                     "setup" {
-                        Invoke-Script -ScriptFile $script.File -Arguments @("-Interactive")
+                        Run-Script -ScriptFile $selected.File -Arguments @("-Interactive")
                     }
                     default {
-                        Invoke-Script -ScriptFile $script.File
+                        Run-Script -ScriptFile $selected.File
                     }
                 }
             }
             else {
-                Write-Host "`n  Invalid option. Try again.`n" -ForegroundColor Red
-                Start-Sleep -Seconds 1
+                Write-Host ""
+                Write-Host "  Invalid option: '$choice'" -ForegroundColor Red
+                Write-Host "  Enter a number (0-9), H for help, or Q to quit." -ForegroundColor Yellow
+                Write-Host ""
+                Start-Sleep -Seconds 2
             }
         }
     }
